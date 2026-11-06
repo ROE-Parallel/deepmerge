@@ -76,3 +76,22 @@ test('merging objects with null prototype', function(t) {
 	t.deepEqual(expected, merge(target, source))
 	t.end()
 })
+
+test('merging a target that has an own __proto__ key does not poison the returned object', function(t) {
+	var maliciousTarget = JSON.parse('{ "__proto__": { "admin": true }, "name": "a" }')
+	var mergedObject = merge(maliciousTarget, { name: 'b' })
+	t.equal(mergedObject.name, 'b', 'regular keys are still merged')
+	t.notOk(mergedObject.admin, 'the returned object must not inherit properties from the malicious target')
+	t.equal(Object.getPrototypeOf(mergedObject), Object.prototype, 'the returned object keeps Object.prototype')
+	t.end()
+})
+
+test('merging two objects that both have an own __proto__ key does not poison the returned object', function(t) {
+	var a = JSON.parse('{ "__proto__": { "admin": true } }')
+	var b = JSON.parse('{ "__proto__": { "root": true } }')
+	var mergedObject = merge(a, b)
+	t.notOk(mergedObject.admin, 'no inherited admin')
+	t.notOk(mergedObject.root, 'no inherited root')
+	t.equal(Object.getPrototypeOf(mergedObject), Object.prototype, 'the returned object keeps Object.prototype')
+	t.end()
+})
